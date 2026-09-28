@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo de Filtros</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+body { background: #f4f6f9; color: #333; }
+
+header {
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: white; padding: 18px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  position: sticky; top: 0; z-index: 100;
+}
+header h1 { font-size: 1.4rem; }
+header p { font-size: 0.8rem; opacity: 0.9; }
+header button, header a {
+  background: rgba(255,255,255,0.15); color: white; border: none;
+  padding: 9px 16px; border-radius: 8px; cursor: pointer;
+  font-size: 0.9rem; text-decoration: none; transition: background 0.2s;
+}
+header button:hover, header a:hover { background: rgba(255,255,255,0.28); }
+
+.container { max-width: 1300px; margin: 20px auto; padding: 0 15px; }
+
+.stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.stat-card {
+  background: white; padding: 15px; border-radius: 10px;
+  text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-left: 4px solid #2a5298;
+}
+.stat-card h3 { font-size: 1.6rem; color: #2a5298; }
+.stat-card p { font-size: 0.85rem; color: #666; margin-top: 4px; }
+
+.controls {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 20px; background: white; padding: 15px;
+  border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.controls input, .controls select {
+  padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px;
+  font-size: 0.95rem; flex: 1; min-width: 160px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+.card {
+  background: white; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s; display: flex; flex-direction: column;
+}
+.card:hover { transform: translateY(-4px); }
+.card-img {
+  height: 180px; background: #eef2f7;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3rem; color: #2a5298; overflow: hidden;
+}
+.card-img img { width: 100%; height: 100%; object-fit: cover; }
+.card-body { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+.card-body h3 { font-size: 1.05rem; margin-bottom: 6px; color: #1e3c72; }
+.card-body .sku { font-size: 0.8rem; color: #888; margin-bottom: 8px; }
+.card-body .desc { font-size: 0.88rem; color: #555; margin-bottom: 10px; flex: 1; }
+
+.badge {
+  display: inline-block; padding: 4px 10px; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600; margin-bottom: 8px;
+}
+.badge-ok  { background: #d4edda; color: #155724; }
+.badge-low { background: #fff3cd; color: #856404; }
+.badge-out { background: #f8d7da; color: #721c24; }
+
+.card-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;
+}
+.price { font-size: 1.2rem; font-weight: 700; color: #1e3c72; }
+.stock { font-size: 0.85rem; color: #666; }
+
+.btn-qr {
+  background: #2a5298; color: white; border: none;
+  padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  font-size: 0.78rem; margin-top: 8px;
+}
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: none; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: white; border-radius: 14px; padding: 25px;
+  max-width: 450px; width: 100%; text-align: center;
+}
+.modal h3 { color: #1e3c72; margin-bottom: 12px; }
+.modal canvas { margin: 10px auto; display: block; }
+
+.btn {
+  padding: 10px 18px; border: none; border-radius: 8px;
+  font-size: 0.95rem; cursor: pointer; font-weight: 600; margin: 4px;
+}
+.btn-primary { background: #2a5298; color: white; }
+.btn-secondary { background: #e0e0e0; color: #333; }
+.btn-success { background: #28a745; color: white; }
+.btn-danger  { background: #dc3545; color: white; }
+
+.form-card {
+  background: white; padding: 20px; border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 20px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.form-grid label {
+  font-size: 0.85rem; color: #555; font-weight: 600;
+  display: block; margin-bottom: 4px;
+}
+.form-grid input, .form-grid select, .form-grid textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid #ddd;
+  border-radius: 8px; font-size: 0.95rem; font-family: inherit;
+}
+
+.drop-zone {
+  border: 2px dashed #ccc; border-radius: 10px;
+  padding: 20px; text-align: center; cursor: pointer;
+  transition: all 0.2s; background: #fafbfc;
+  grid-column: 1 / -1;
+}
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: #2a5298; background: #eef4ff;
+}
+.drop-zone img { max-height: 120px; border-radius: 8px; margin-top: 10px; }
+
+.tabla-admin {
+  width: 100%; background: white; border-radius: 12px;
+  overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  border-collapse: collapse;
+}
+.tabla-admin th, .tabla-admin td {
+  padding: 12px; text-align: left; border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+.tabla-admin th { background: #1e3c72; color: white; }
+.tabla-admin img { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; }
+
+.btn-sm { padding: 5px 10px; font-size: 0.78rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; margin-right: 4px; }
+
+.login-box {
+  max-width: 380px; margin: 80px auto;
+  background: white; padding: 30px; border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+.login-box h2 { text-align: center; color: #1e3c72; margin-bottom: 20px; }
+.login-box input {
+  width: 100%; padding: 11px; border: 1px solid #ddd;
+  border-radius: 8px; margin-bottom: 12px; font-size: 0.95rem;
+}
+
+.view { display: none; }
+.view.active { display: block; }
+
+footer { text-align: center; padding: 20px; color: #888; font-size: 0.85rem; }
+.empty { text-align: center; padding: 40px; color: #888; grid-column: 1/-1; }
+</style>
+</head>
+<body>
+
+<!-- ================= CATÁLOGO ================= -->
+<div id="viewCatalogo" class="view active">
+  <header>
+    <div>
+      <h1>🔧 Catálogo de Filtros</h1>
+      <p>Inventario en tiempo real</p>
+    </div>
+    <button onclick="irAdmin()">⚙️ Admin</button>
+  </header>
+
+  <div class="container">
+    <div class="stats">
+      <div class="stat-card"><h3 id="totalProductos">0</h3><p>Productos</p></div>
+      <div class="stat-card"><h3 id="totalStock">0</h3><p>Unidades</p></div>
+      <div class="stat-card"><h3 id="totalCategorias">0</h3><p>Categorías</p></div>
+      <div class="stat-card"><h3 id="bajoStock">0</h3><p>Bajo Stock</p></div>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="search" placeholder="🔍 Buscar...">
+      <select id="filterCategory"><option value="">Todas las categorías</option></select>
+      <select id="filterStock">
+        <option value="">Todo el inventario</option>
+        <option value="ok">Stock disponible</option>
+        <option value="low">Bajo stock (&lt;10)</option>
+        <option value="out">Sin stock</option>
+      </select>
+      <select id="sortBy">
+        <option value="name">Nombre A-Z</option>
+        <option value="price-asc">Precio ↑</option>
+        <option value="price-desc">Precio ↓</option>
+        <option value="stock-desc">Mayor stock</option>
+      </select>
+    </div>
+
+    <div class="grid" id="catalogo"></div>
+  </div>
+
+  <footer>© 2025 Catálogo de Filtros</footer>
+</div>
+
+<!-- ================= ADMIN ================= -->
+<div id="viewLogin" class="view">
+  <div class="login-box">
+    <h2>🔐 Acceso Administrador</h2>
+    <input type="text" id="userInput" placeholder="Usuario">
+    <input type="password" id="passInput" placeholder="Contraseña">
+    <button class="btn btn-primary" style="width:100%;" onclick="intentarLogin()">Ingresar</button>
+    <p id="loginError" style="color:#dc3545; font-size:0.85rem; margin-top:12px; text-align:center;"></p>
+    <p style="color:#999; font-size:0.8rem; margin-top:15px; text-align:center;">
+      admin / admin123
+    </p>
+    <button class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="irCatalogo()">← Volver</button>
+  </div>
+</div>
+
+<div id="viewAdmin" class="view">
+  <header>
+    <div>
+      <h1>⚙️ Panel de Administración</h1>
+      <p>Gestión de inventario</p>
+    </div>
+    <div>
+      <button onclick="irCatalogo()">🏠 Catálogo</button>
+      <button onclick="cerrarSesion()">🚪 Salir</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="form-card">
+      <h3 id="formTitle" style="color:#1e3c72; margin-bottom:15px;">➕ Nuevo Producto</h3>
+      <form id="productForm" onsubmit="guardarProducto(event)">
+        <input type="hidden" id="editId">
+        <div class="form-grid">
+          <div><label>SKU *</label><input type="text" id="fSku" required></div>
+          <div><label>Nombre *</label><input type="text" id="fNombre" required></div>
+          <div><label>Categoría *</label><input type="text" id="fCategoria" required list="catList"><datalist id="catList"></datalist></div>
+          <div><label>Marca</label><input type="text" id="fMarca"></div>
+          <div><label>Precio *</label><input type="number" id="fPrecio" step="0.01" min="0" required></div>
+          <div><label>Stock *</label><input type="number" id="fStock" min="0" required></div>
+          <div><label>Icono</label><input type="text" id="fIcono" placeholder="🛢️" maxlength="4"></div>
+          <div style="grid-column:1/-1;"><label>Descripción</label><textarea id="fDesc"></textarea></div>
+
+          <div class="drop-zone" id="dropZone">
+            <p>📷 Arrastra una imagen o <strong>haz clic</strong></p>
+            <input type="file" id="fileInput" accept="image/*" hidden>
+            <img id="previewImg" style="display:none;">
+            <button type="button" class="btn btn-secondary" id="removeImgBtn" style="display:none; margin-top:8px;" onclick="quitarImagen()">❌ Quitar</button>
+          </div>
+        </div>
+        <div style="margin-top:15px;">
+          <button type="submit" class="btn btn-success" id="submitBtn">💾 Guardar</button>
+          <button type="button" class="btn btn-secondary" onclick="limpiarFormulario()">🔄 Limpiar</button>
+          <button type="button" class="btn btn-danger" onclick="resetearTodo()">⚠️ Restaurar demo</button>
+        </div>
+      </form>
+    </div>
+
+    <h3 style="color:#1e3c72; margin-bottom:12px;">📋 Inventario</h3>
+    <div style="overflow-x:auto;">
+      <table class="tabla-admin">
+        <thead>
+          <tr><th>Img</th><th>SKU</th><th>Nombre</th><th>Categoría</th><th>Marca</th><th>Precio</th><th>Stock</th><th>Acciones</th></tr>
+        </thead>
+        <tbody id="tablaBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL QR ================= -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal">
+    <h3 id="qrTitle">QR</h3>
+    <canvas id="qrCanvas"></canvas>
+    <p id="qrSku" style="color:#666; font-size:0.9rem; margin:10px 0;"></p>
+    <button class="btn btn-primary" onclick="cerrarQR()">Cerrar</button>
+    <button class="btn btn-secondary" onclick="descargarQR()">⬇️ Descargar</button>
+  </div>
+</div>
+
+<script>
+// ============================================
+// DATA
+// ============================================
+const DB_KEY = 'catalogo_filtros_productos';
+const AUTH_KEY = 'catalogo_auth';
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'admin123';
+
+const INICIALES = [
+  { id: 1, sku: "FLT-ACE-001", nombre: "Filtro de Aceite Premium", categoria: "Aceite", marca: "Bosch", desc: "Para motor a gasolina 1.6L - 2.0L", precio: 12.50, stock: 45, icono: "🛢️", imagen: null },
+  { id: 2, sku: "FLT-AIR-002", nombre: "Filtro de Aire Deportivo", categoria: "Aire", marca: "K&N", desc: "Alto rendimiento lavable", precio: 35.00, stock: 8, icono: "💨", imagen: null },
+  { id: 3, sku: "FLT-COMB-003", nombre: "Filtro de Combustible", categoria: "Combustible", marca: "Mann", desc: "Universal para inyección", precio: 18.75, stock: 0, icono: "⛽", imagen: null },
+  { id: 4, sku: "FLT-CAB-004", nombre: "Filtro de Cabina Carbón", categoria: "Cabina", marca: "Mahle", desc: "Antipolen con carbón activado", precio: 22.00, stock: 30, icono: "🌬️", imagen: null },
+  { id: 5, sku: "FLT-ACE-005", nombre: "Filtro de Aceite Diésel", categoria: "Aceite", marca: "Fram", desc: "Motores diésel pesados", precio: 25.90, stock: 5, icono: "🛢️", imagen: null },
+];
+
+function getProductos() {
+  const data = localStorage.getItem(DB_KEY);
+  if (!data) {
+    localStorage.setItem(DB_KEY, JSON.stringify(INICIALES));
+    return [...INICIALES];
+  }
+  try { return JSON.parse(data); } catch(e) { return [...INICIALES]; }
+}
+function saveProductos(lista) { localStorage.setItem(DB_KEY, JSON.stringify(lista)); }
+function addProducto(p) { const l = getProductos(); p.id = Date.now(); l.push(p); saveProductos(l); return p; }
+function updateProducto(id, c) {
+  const l = getProductos();
+  const i = l.findIndex(x => x.id == id);
+  if (i === -1) return null;
+  l[i] = { ...l[i], ...c, id: l[i].id };
+  saveProductos(l); return l[i];
+}
+function deleteProducto(id) { saveProductos(getProductos().filter(x => x.id != id)); }
+function resetProductos() { saveProductos([...INICIALES]); }
+
+function login(u, p) {
+  if (u === ADMIN_USER && p === ADMIN_PASS) { sessionStorage.setItem(AUTH_KEY, 'ok'); return true; }
+  return false;
+}
+function logout() { sessionStorage.removeItem(AUTH_KEY); }
+function isLogged() { return sessionStorage.getItem(AUTH_KEY) === 'ok'; }
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ============================================
+// NAVEGACIÓN ENTRE VISTAS
+// ============================================
+function mostrarVista(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function irCatalogo() { mostrarVista('viewCatalogo'); renderCatalogo(); actualizarStats(); }
+function irAdmin() {
+  if (isLogged()) { mostrarVista('viewAdmin'); renderTabla(); llenarCategorias(); }
+  else mostrarVista('viewLogin');
+}
+
+// ============================================
+// CATÁLOGO
+// ============================================
+const catalogoEl = document.getElementById('catalogo');
+
+function getEstadoStock(stock) {
+  if (stock === 0) return { clase: 'badge-out', texto: 'Sin stock' };
+  if (stock < 10)  return { clase: 'badge-low', texto: `Bajo stock (${stock})` };
+  return { clase: 'badge-ok', texto: `Disponible (${stock})` };
+}
+
+function cargarCategoriasFiltro() {
+  const cats = [...new Set(getProductos().map(p => p.categoria))].sort();
+  const sel = document.getElementById('filterCategory');
+  const val = sel.value;
+  sel.innerHTML = '<option value="">Todas las categorías</option>' +
+    cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  sel.value = val;
+}
+
+function renderCatalogo() {
+  const productos = getProductos();
+  const busqueda = document.getElementById('search').value.toLowerCase().trim();
+  const cat = document.getElementById('filterCategory').value;
+  const stk = document.getElementById('filterStock').value;
+  const ord = document.getElementById('sortBy').value;
+
+  let lista = productos.filter(p => {
+    const b = !busqueda ||
+      p.nombre.toLowerCase().includes(busqueda) ||
+      p.sku.toLowerCase().includes(busqueda) ||
+      (p.marca || '').toLowerCase().includes(busqueda);
+    const c = !cat || p.categoria === cat;
+    let s = true;
+    if (stk === 'ok') s = p.stock >= 10;
+    else if (stk === 'low') s = p.stock > 0 && p.stock < 10;
+    else if (stk === 'out') s = p.stock === 0;
+    return b && c && s;
+  });
+
+  if (ord === 'name') lista.sort((a,b) => a.nombre.localeCompare(b.nombre));
+  else if (ord === 'price-asc') lista.sort((a,b) => a.precio - b.precio);
+  else if (ord === 'price-desc') lista.sort((a,b) => b.precio - a.precio);
+  else if (ord === 'stock-desc') lista.sort((a,b) => b.stock - a.stock);
+
+  if (!lista.length) {
+    catalogoEl.innerHTML = '<div class="empty">😕 No se encontraron productos</div>';
+    return;
+  }
+
+  catalogoEl.innerHTML = lista.map(p => {
+    const est = getEstadoStock(p.stock);
+    const img = p.imagen ? `<img src="${p.imagen}" alt="${p.nombre}">` : (p.icono || '📦');
+    return `
+      <div class="card">
+        <div class="card-img">${img}</div>
+        <div class="card-body">
+          <span class="badge ${est.clase}">${est.texto}</span>
+          <h3>${p.nombre}</h3>
+          <div class="sku">SKU: ${p.sku} | ${p.marca || '—'}</div>
+          <div class="desc">${p.desc || ''}</div>
+          <div class="card-footer">
+            <span class="price">$${Number(p.precio).toFixed(2)}</span>
+            <span class="stock">📦 ${p.stock}</span>
+          </div>
+          <button class="btn-qr" onclick="mostrarQR(${p.id})">📱 Ver QR</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function actualizarStats() {
+  const ps = getProductos();
+  document.getElementById('totalProductos').textContent = ps.length;
+  document.getElementById('totalStock').textContent = ps.reduce((s,p) => s + Number(p.stock), 0);
+  document.getElementById('totalCategorias').textContent = [...new Set(ps.map(p => p.categoria))].length;
+  document.getElementById('bajoStock').textContent = ps.filter(p => p.stock < 10).length;
+}
+
+// ============================================
+// QR
+// ============================================
+let qrActual = null;
+function mostrarQR(id) {
+  const p = getProductos().find(x => x.id == id);
+  if (!p) return;
+  document.getElementById('qrTitle').textContent = p.nombre;
+  document.getElementById('qrSku').textContent = 'SKU: ' + p.sku;
+  document.getElementById('qrModal').classList.add('active');
+
+  const contenido = JSON.stringify({ sku: p.sku, nombre: p.nombre, marca: p.marca, precio: p.precio, stock: p.stock });
+
+  if (typeof QRCode === 'undefined') {
+    alert('⚠️ No se pudo cargar la librería QR. Verifica tu conexión a internet.');
+    return;
+  }
+  QRCode.toCanvas(document.getElementById('qrCanvas'), contenido, { width: 220, margin: 1 }, err => {
+    if (err) console.error(err);
+  });
+  qrActual = { p };
+}
+function cerrarQR() { document.getElementById('qrModal').classList.remove('active'); }
+function descargarQR() {
+  if (!qrActual) return;
+  const c = document.getElementById('qrCanvas');
+  const a = document.createElement('a');
+  a.download = `QR_${qrActual.p.sku}.png`;
+  a.href = c.toDataURL('image/png');
+  a.click();
+}
+
+// ============================================
+// LOGIN
+// ============================================
+function intentarLogin() {
+  const u = document.getElementById('userInput').value.trim();
+  const p = document.getElementById('passInput').value;
+  if (login(u, p)) {
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('userInput').value = '';
+    document.getElementById('passInput').value = '';
+    mostrarVista('viewAdmin');
+    renderTabla();
+    llenarCategorias();
+  } else {
+    document.getElementById('loginError').textContent = '❌ Usuario o contraseña incorrectos';
+  }
+}
+function cerrarSesion() { logout(); mostrarVista('viewCatalogo'); }
+
+document.getElementById('passInput').addEventListener('keypress', e => {
+  if (e.key === 'Enter') intentarLogin();
+});
+
+// ============================================
+// ADMIN - TABLA Y FORMULARIO
+// ============================================
+let imagenActual = null;
+
+function renderTabla() {
+  const ps = getProductos();
+  const tb = document.getElementById('tablaBody');
+  if (!ps.length) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#888;">Sin productos</td></tr>';
+    return;
+  }
+  tb.innerHTML = ps.map(p => {
+    const img = p.imagen ? `<img src="${p.imagen}">` : `<div style="font-size:1.8rem;text-align:center;">${p.icono || '📦'}</div>`;
+    const col = p.stock === 0 ? '#dc3545' : (p.stock < 10 ? '#856404' : '#28a745');
+    return `<tr>
+      <td>${img}</td>
+      <td><strong>${p.sku}</strong></td>
+      <td>${p.nombre}</td>
+      <td>${p.categoria}</td>
+      <td>${p.marca || '—'}</td>
+      <td>$${Number(p.precio).toFixed(2)}</td>
+      <td style="color:${col};font-weight:600;">${p.stock}</td>
+      <td>
+        <button class="btn-sm btn-primary" onclick="editarProducto(${p.id})">✏️</button>
+        <button class="btn-sm btn-danger" onclick="eliminarProducto(${p.id})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function llenarCategorias() {
+  const cats = [...new Set(getProductos().map(p => p.categoria))].sort();
+  document.getElementById('catList').innerHTML = cats.map(c => `<option value="${c}">`).join('');
+  cargarCategoriasFiltro();
+}
+
+function guardarProducto(e) {
+  e.preventDefault();
+  const id = document.getElementById('editId').value;
+  const datos = {
+    sku: document.getElementById('fSku').value.trim(),
+    nombre: document.getElementById('fNombre').value.trim(),
+    categoria: document.getElementById('fCategoria').value.trim(),
+    marca: document.getElementById('fMarca').value.trim(),
+    precio: parseFloat(document.getElementById('fPrecio').value),
+    stock: parseInt(document.getElementById('fStock').value),
+    icono: document.getElementById('fIcono').value.trim() || '📦',
+    desc: document.getElementById('fDesc').value.trim(),
+    imagen: imagenActual
+  };
+  if (id) { updateProducto(id, datos); alert('✅ Actualizado'); }
+  else { addProducto(datos); alert('✅ Agregado'); }
+  limpiarFormulario();
+  renderTabla();
+  llenarCategorias();
+}
+
+function editarProducto(id) {
+  const p = getProductos().find(x => x.id == id);
+  if (!p) return;
+  document.getElementById('editId').value = p.id;
+  document.getElementById('fSku').value = p.sku;
+  document.getElementById('fNombre').value = p.nombre;
+  document.getElementById('fCategoria').value = p.categoria;
+  document.getElementById('fMarca').value = p.marca || '';
+  document.getElementById('fPrecio').value = p.precio;
+  document.getElementById('fStock').value = p.stock;
+  document.getElementById('fIcono').value = p.icono || '';
+  document.getElementById('fDesc').value = p.desc || '';
+  imagenActual = p.imagen || null;
+  const prev = document.getElementById('previewImg');
+  const rem = document.getElementById('removeImgBtn');
+  if (imagenActual) { prev.src = imagenActual; prev.style.display = 'block'; rem.style.display = 'inline-block'; }
+  else { prev.style.display = 'none'; rem.style.display = 'none'; }
+  document.getElementById('formTitle').textContent = '✏️ Editar Producto';
+  document.getElementById('submitBtn').textContent = '💾 Actualizar';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function eliminarProducto(id) {
+  const p = getProductos().find(x => x.id == id);
+  if (!p || !confirm(`¿Eliminar "${p.nombre}"?`)) return;
+  deleteProducto(id);
+  renderTabla();
+  llenarCategorias();
+}
+
+function limpiarFormulario() {
+  document.getElementById('productForm').reset();
+  document.getElementById('editId').value = '';
+  imagenActual = null;
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('removeImgBtn').style.display = 'none';
+  document.getElementById('formTitle').textContent = '➕ Nuevo Producto';
+  document.getElementById('submitBtn').textContent = '💾 Guardar';
+}
+
+function resetearTodo() {
+  if (!confirm('⚠️ Esto borrará todos los productos y restaurará los de ejemplo. ¿Continuar?')) return;
+  resetProductos();
+  renderTabla();
+  llenarCategorias();
+}
+
+// ============================================
+// SUBIR IMAGEN
+// ============================================
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const previewImg = document.getElementById('previewImg');
+const removeImgBtn = document.getElementById('removeImgBtn');
+
+dropZone.addEventListener('click', e => {
+  if (e.target.id !== 'removeImgBtn') fileInput.click();
+});
+fileInput.addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (f) await procesarImagen(f);
+});
+['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('dragover'); }));
+['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('dragover'); }));
+dropZone.addEventListener('drop', async e => {
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) await procesarImagen(f);
+});
+
+async function procesarImagen(file) {
+  if (file.size > 5 * 1024 * 1024) { alert('❌ Imagen muy grande (máx 5MB)'); return; }
+  const b64 = await fileToBase64(file);
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    const MAX = 500;
+    let w = img.width, h = img.height;
+    if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+    else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    imagenActual = c.toDataURL('image/jpeg', 0.8);
+    previewImg.src = imagenActual;
+    previewImg.style.display = 'block';
+    removeImgBtn.style.display = 'inline-block';
+  };
+  img.src = b64;
+}
+
+function quitarImagen() {
+  imagenActual = null;
+  previewImg.style.display = 'none';
+  removeImgBtn.style.display = 'none';
+  fileInput.value = '';
+}
+
+// ============================================
+// EVENTOS E INIT
+// ============================================
+document.getElementById('search').addEventListener('input', renderCatalogo);
+document.getElementById('filterCategory').addEventListener('change', renderCatalogo);
+document.getElementById('filterStock').addEventListener('change', renderCatalogo);
+document.getElementById('sortBy').addEventListener('change', renderCatalogo);
+document.getElementById('qrModal').addEventListener('click', e => {
+  if (e.target.id === 'qrModal') cerrarQR();
+});
+
+// Arrancar
+cargarCategoriasFiltro();
+actualizarStats();
+renderCatalogo();
+console.log('✅ Catálogo listo. Productos:', getProductos().length);
+</script>
+</body>
+</html>
